@@ -296,11 +296,36 @@ function renderCarousel() {
 }
 
 function advanceCarousel() {
-  queue.shift();
-  fillQueue();
-  renderCarousel();
-  targetShownAt = performance.now();
-  mistakeOnCurrent = false;
+  const slot0 = document.getElementById('slot0');
+
+  // Phase 1: slide current letter out left
+  slot0.style.transition = 'opacity 45ms ease-out, transform 45ms ease-out';
+  slot0.style.opacity = '0';
+  slot0.style.transform = 'translateX(-18px)';
+
+  setTimeout(() => {
+    queue.shift();
+    fillQueue();
+    targetShownAt = performance.now();
+    mistakeOnCurrent = false;
+
+    // Snap slot0 to entry position (no transition)
+    slot0.style.transition = 'none';
+    slot0.style.transform = 'translateX(14px)';
+    slot0.style.opacity = '0';
+
+    renderCarousel();
+
+    // Phase 2: animate slot0 into place
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        slot0.style.transition = 'opacity 110ms ease-out, transform 110ms cubic-bezier(0.22, 1, 0.36, 1)';
+        slot0.style.opacity = '1';
+        slot0.style.transform = 'translateX(0)';
+        setTimeout(() => { slot0.style.transition = ''; }, 120);
+      });
+    });
+  }, 50);
 }
 
 function focusInput() {
