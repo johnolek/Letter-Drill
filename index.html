@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Letter Drill</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #0f1114;
+      --surface: #1a1d23;
+      --surface2: #24282f;
+      --border: #2e333b;
+      --text: #e8eaed;
+      --text-dim: #6b7280;
+      --accent: #60a5fa;
+      --correct: #34d399;
+      --wrong: #f87171;
+      --gold: #fbbf24;
+      --mono: 'Menlo', 'Courier New', monospace;
+      --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    }
+
+    html { height: 100%; overflow: hidden; }
+
+    body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      overflow: hidden;
+      touch-action: manipulation;
+      position: fixed;
+      width: 100%;
+    }
+
+    .screen { display: none; height: 100%; flex-direction: column; }
+    .screen.active { display: flex; }
+
+    /* ══════ DRILL SCREEN ══════ */
+    #drill-screen { position: relative; overflow: hidden; }
+
+    .drill-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      z-index: 5;
+    }
+
+    .drill-header button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--sans);
+      font-size: 14px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .drill-stats {
+      display: flex;
+      gap: 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .drill-stats .val { color: var(--text); font-weight: 700; }
+
+    .drill-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Carousel */
+    .carousel {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      position: relative;
+      height: 160px;
+      width: 100%;
+    }
+
+    .carousel-slot {
+      position: absolute;
+      font-family: var(--mono);
+      font-weight: 700;
+      line-height: 1;
+      transition: all 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+      user-select: none;
+    }
+
+    .carousel-slot.s0 {
+      font-size: min(28vw, 150px);
+      opacity: 1;
+      transform: translateX(0);
+      z-index: 3;
+    }
+
+    .carousel-slot.s1 {
+      font-size: min(16vw, 80px);
+      opacity: 0.3;
+      transform: translateX(min(30vw, 140px));
+      z-index: 2;
+    }
+
+    .carousel-slot.s2 {
+      font-size: min(10vw, 50px);
+      opacity: 0.12;
+      transform: translateX(min(48vw, 210px));
+      z-index: 1;
+    }
+
+    /* Particles container */
+    .particles {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* Correct flash ring */
+    .ring-burst {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 8;
+      transform: translate(-50%, -50%);
+    }
+
+    .ring-burst.go {
+      animation: ringExpand 0.5s ease-out forwards;
+    }
+
+    @keyframes ringExpand {
+      0% { width: 20px; height: 20px; border: 3px solid var(--correct); opacity: 1; }
+      100% { width: 200px; height: 200px; border: 2px solid var(--correct); opacity: 0; }
+    }
+
+    .ring-burst.gold.go {
+      animation: ringExpandGold 0.5s ease-out forwards;
+    }
+
+    @keyframes ringExpandGold {
+      0% { width: 20px; height: 20px; border: 4px solid var(--gold); opacity: 1; }
+      100% { width: 260px; height: 260px; border: 2px solid var(--gold); opacity: 0; }
+    }
+
+    /* Shake for wrong */
+    .shake {
+      animation: shake 0.3s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20% { transform: translateX(-8px); }
+      40% { transform: translateX(8px); }
+      60% { transform: translateX(-4px); }
+      80% { transform: translateX(4px); }
+    }
+
+    /* Recent dots */
+    .recent-row {
+      display: flex;
+      gap: 5px;
+      height: 24px;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    .rdot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      opacity: 0.7;
+    }
+
+    .rdot.c { background: var(--correct); }
+    .rdot.w { background: var(--wrong); }
+    .rdot.g { background: var(--gold); }
+
+    /* Hidden input — positioned to avoid scroll */
+    #hinput {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 1px;
+      opacity: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 16px; /* prevents iOS zoom */
+      z-index: -1;
+    }
+
+    /* ══════ SETUP SCREEN ══════ */
+    #setup-screen {
+      padding: 20px;
+      padding-bottom: 100px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .setup-title {
+      font-family: var(--mono);
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+
+    .setup-sub {
+      color: var(--text-dim);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+      margin-top: 18px;
+    }
+
+    .letter-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .lbtn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 9px;
+      border: 2px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      font-family: var(--mono);
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.1s;
+    }
+
+    .lbtn.on {
+      border-color: var(--accent);
+      background: rgba(96, 165, 250, 0.12);
+      color: var(--accent);
+    }
+
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+
+    .pbtn {
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-dim);
+      font-family: var(--sans);
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .pbtn:active { background: var(--surface2); }
+
+    /* Keyboard toggle input */
+    .toggle-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+
+    .toggle-input-row label {
+      font-size: 12px;
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+
+    #toggle-input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 16px;
+      outline: none;
+      caret-color: var(--accent);
+    }
+
+    #toggle-input:focus { border-color: var(--accent); }
+    #toggle-input::placeholder { color: var(--text-dim); opacity: 0.5; }
+
+    .start-btn {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      right: 20px;
+      padding: 15px;
+      border-radius: 12px;
+      border: none;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--sans);
+      font-size: 17px;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 20;
+    }
+
+    .start-btn:disabled { opacity: 0.3; cursor: default; }
+
+    /* ══════ STATS SCREEN ══════ */
+    #stats-screen {
+      padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .stats-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .stats-header h2 {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .stats-header button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--sans);
+      font-size: 14px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .scard {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      padding: 14px;
+    }
+
+    .scard .sl {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 4px;
+    }
+
+    .scard .sv {
+      font-family: var(--mono);
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .ltable {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ltable th {
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      padding: 7px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .ltable th:not(:first-child) { text-align: right; }
+
+    .ltable td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 14px;
+    }
+
+    .ltable td:first-child { font-size: 17px; font-weight: 700; }
+    .ltable td:not(:first-child) { text-align: right; color: var(--text-dim); }
+    .ltable tr.slow td:first-child { color: var(--wrong); }
+    .ltable tr.fast td:first-child { color: var(--correct); }
+
+    .abar {
+      display: inline-block;
+      height: 5px;
+      border-radius: 3px;
+      min-width: 3px;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+
+    .clear-btn {
+      margin-top: 16px;
+      width: 100%;
+      padding: 11px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--wrong);
+      font-family: var(--sans);
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* ══════ SETTINGS SCREEN ══════ */
+    #settings-screen {
+      padding: 20px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .settings-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .settings-header h2 {
+      font-family: var(--mono);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .settings-header button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-family: var(--sans);
+      font-size: 14px;
+      padding: 5px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .setting-row .slabel {
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .setting-row .sdesc {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+
+    .setting-row input[type="number"] {
+      width: 70px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      text-align: right;
+      outline: none;
+    }
+
+    .setting-row input[type="number"]:focus { border-color: var(--accent); }
+
+    .bottom-links {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════ SETUP ══════ -->
+<div id="setup-screen" class="screen active">
+  <div class="setup-title">letter drill</div>
+  <div class="setup-sub">Pick letters to practice. Tap them or type below to toggle.</div>
+
+  <div class="section-label">Presets</div>
+  <div class="preset-row">
+    <button class="pbtn" data-preset="me-taps">ME taps</button>
+    <button class="pbtn" data-preset="me-taps+dl">+ d l</button>
+    <button class="pbtn" data-preset="me-taps+dlcu">+ d l c u</button>
+    <button class="pbtn" data-preset="me-common">+ common swipes</button>
+    <button class="pbtn" data-preset="all">All</button>
+    <button class="pbtn" data-preset="none">None</button>
+  </div>
+
+  <div class="section-label">Letters</div>
+  <div class="letter-grid" id="letter-grid"></div>
+
+  <div class="section-label">Other Characters</div>
+  <div class="letter-grid" id="extra-grid"></div>
+
+  <div class="section-label">Toggle with keyboard</div>
+  <div class="toggle-input-row">
+    <input id="toggle-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type a letter to toggle it">
+  </div>
+
+  <div class="bottom-links" style="margin-top: 18px;">
+    <button class="pbtn" id="open-stats">Stats</button>
+    <button class="pbtn" id="open-settings">Settings</button>
+  </div>
+
+  <button class="start-btn" id="start-btn" disabled>Start</button>
+</div>
+
+<!-- ══════ DRILL ══════ -->
+<div id="drill-screen" class="screen">
+  <input id="hinput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+  <div class="drill-header">
+    <button id="drill-back">&#8592; Done</button>
+    <div class="drill-stats">
+      <span><span class="val" id="ds-n">0</span></span>
+      <span><span class="val" id="ds-acc">&mdash;</span> acc</span>
+      <span><span class="val" id="ds-lpm">&mdash;</span> lpm</span>
+    </div>
+  </div>
+  <div class="drill-area" id="drill-area">
+    <div class="carousel" id="carousel">
+      <div class="carousel-slot s0" id="slot0"></div>
+      <div class="carousel-slot s1" id="slot1"></div>
+      <div class="carousel-slot s2" id="slot2"></div>
+    </div>
+    <div class="particles" id="particles"></div>
+    <div class="ring-burst" id="ring"></div>
+    <div class="recent-row" id="dots"></div>
+  </div>
+</div>
+
+<!-- ══════ STATS ══════ -->
+<div id="stats-screen" class="screen">
+  <div class="stats-header">
+    <h2>Stats</h2>
+    <button id="stats-back">&#8592; Back</button>
+  </div>
+  <div class="stats-grid" id="stats-grid"></div>
+  <table class="ltable"><thead><tr>
+    <th>Letter</th><th>Avg ms</th><th>Accuracy</th><th>Count</th>
+  </tr></thead><tbody id="ltbody"></tbody></table>
+  <button class="clear-btn" id="clear-stats">Clear All Stats</button>
+</div>
+
+<!-- ══════ SETTINGS ══════ -->
+<div id="settings-screen" class="screen">
+  <div class="settings-header">
+    <h2>Settings</h2>
+    <button id="settings-back">&#8592; Back</button>
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="slabel">Fast threshold</div>
+      <div class="sdesc">ms — gold burst effect</div>
+    </div>
+    <input type="number" id="set-fast" min="50" max="5000" step="50">
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="slabel">Medium threshold</div>
+      <div class="sdesc">ms — green ring effect</div>
+    </div>
+    <input type="number" id="set-medium" min="100" max="10000" step="50">
+  </div>
+  <div class="setting-row">
+    <div>
+      <div class="slabel">Pause timeout</div>
+      <div class="sdesc">ms — ignore time after this</div>
+    </div>
+    <input type="number" id="set-pause" min="1000" max="30000" step="500">
+  </div>
+</div>
+
+<script>
+  // ── CONFIG ──
+  const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
+  const EXTRAS = '.,;:!?\'-/"@'.split('');
+  const PRESETS = {
+    'me-taps': 'aehinorst',
+    'me-taps+dl': 'adehinlorst',
+    'me-taps+dlcu': 'acdehinlorstu',
+    'me-common': 'acdefghilmnorstwu',
+    'all': LETTERS.join(''),
+    'none': '',
+  };
+
+  const DEFAULT_SETTINGS = { fastMs: 350, mediumMs: 800, pauseMs: 4000 };
+
+  function loadSettings() {
+    try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem('ld_settings') || '{}') }; }
+    catch { return { ...DEFAULT_SETTINGS }; }
+  }
+  function saveSettings(s) { localStorage.setItem('ld_settings', JSON.stringify(s)); }
+
+  function loadStats() {
+    try { return JSON.parse(localStorage.getItem('ld_stats') || '{}'); }
+    catch { return {}; }
+  }
+  function saveStats(s) { localStorage.setItem('ld_stats', JSON.stringify(s)); }
+
+  function loadSelection() {
+    try { return new Set(JSON.parse(localStorage.getItem('ld_sel') || '[]')); }
+    catch { return new Set(); }
+  }
+  function saveSelection(s) { localStorage.setItem('ld_sel', JSON.stringify([...s])); }
+
+  // ── STATE ──
+  let selected = loadSelection();
+  let settings = loadSettings();
+  let drillLetters = [];
+  let queue = [];       // upcoming letters
+  let currentTarget = '';
+  let targetShownAt = 0;
+  let sessionCorrect = 0;
+  let sessionAttempts = 0;
+  let sessionStartTime = 0;
+  let isFirstLetter = true;
+  let mistakeOnCurrent = false;
+
+  // ── SCREENS ──
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // ── SETUP: LETTER GRIDS ──
+  function renderGrid(el, chars) {
+    el.innerHTML = '';
+    chars.forEach(ch => {
+      const b = document.createElement('button');
+      b.className = 'lbtn' + (selected.has(ch) ? ' on' : '');
+      b.textContent = ch;
+      b.addEventListener('click', () => { toggleChar(ch); });
+      el.appendChild(b);
+    });
+  }
+
+  function toggleChar(ch) {
+    if (selected.has(ch)) selected.delete(ch); else selected.add(ch);
+    syncGrids();
+    saveSelection(selected);
+    updateStartBtn();
+  }
+
+  function syncGrids() {
+    document.querySelectorAll('#letter-grid .lbtn, #extra-grid .lbtn').forEach(b => {
+      b.classList.toggle('on', selected.has(b.textContent));
+    });
+  }
+
+  function updateStartBtn() {
+    document.getElementById('start-btn').disabled = selected.size < 2;
+  }
+
+  renderGrid(document.getElementById('letter-grid'), LETTERS);
+  renderGrid(document.getElementById('extra-grid'), EXTRAS);
+  updateStartBtn();
+
+  // Presets
+  document.querySelectorAll('.pbtn[data-preset]').forEach(b => {
+    b.addEventListener('click', () => {
+      selected.clear();
+      PRESETS[b.dataset.preset].split('').forEach(c => selected.add(c));
+      syncGrids();
+      saveSelection(selected);
+      updateStartBtn();
+    });
+  });
+
+  // Keyboard toggle input
+  document.getElementById('toggle-input').addEventListener('input', function(e) {
+    const ch = (e.data || '').toLowerCase();
+    this.value = '';
+    if (!ch || ch === ' ') return;
+    const allChars = LETTERS.concat(EXTRAS);
+    if (allChars.includes(ch)) {
+      toggleChar(ch);
+    }
+  });
+
+  // ── NAV BUTTONS ──
+  document.getElementById('start-btn').addEventListener('click', startDrill);
+  document.getElementById('drill-back').addEventListener('click', () => { show('setup-screen'); });
+  document.getElementById('open-stats').addEventListener('click', () => { renderStatsScreen(); show('stats-screen'); });
+  document.getElementById('stats-back').addEventListener('click', () => show('setup-screen'));
+  document.getElementById('open-settings').addEventListener('click', () => { populateSettings(); show('settings-screen'); });
+  document.getElementById('settings-back').addEventListener('click', () => { readSettings(); show('setup-screen'); });
+  document.getElementById('clear-stats').addEventListener('click', () => {
+    if (confirm('Clear all stats?')) { localStorage.removeItem('ld_stats'); renderStatsScreen(); }
+  });
+
+  // ── SETTINGS ──
+  function populateSettings() {
+    document.getElementById('set-fast').value = settings.fastMs;
+    document.getElementById('set-medium').value = settings.mediumMs;
+    document.getElementById('set-pause').value = settings.pauseMs;
+  }
+
+  function readSettings() {
+    settings.fastMs = parseInt(document.getElementById('set-fast').value) || DEFAULT_SETTINGS.fastMs;
+    settings.mediumMs = parseInt(document.getElementById('set-medium').value) || DEFAULT_SETTINGS.mediumMs;
+    settings.pauseMs = parseInt(document.getElementById('set-pause').value) || DEFAULT_SETTINGS.pauseMs;
+    saveSettings(settings);
+  }
+
+  // ── DRILL ──
+  function pickLetter() {
+    let l;
+    const last = queue.length > 0 ? queue[queue.length - 1] : '';
+    do { l = drillLetters[Math.floor(Math.random() * drillLetters.length)]; }
+    while (l === last && drillLetters.length > 1);
+    return l;
+  }
+
+  function fillQueue() {
+    while (queue.length < 3) queue.push(pickLetter());
+  }
+
+  function startDrill() {
+    drillLetters = [...selected];
+    saveSelection(selected);
+    queue = [];
+    sessionCorrect = 0;
+    sessionAttempts = 0;
+    sessionStartTime = 0;
+    isFirstLetter = true;
+    mistakeOnCurrent = false;
+    document.getElementById('dots').innerHTML = '';
+    updateDrillStats();
+    fillQueue();
+    renderCarousel();
+    targetShownAt = performance.now();
+    show('drill-screen');
+    focusInput();
+  }
+
+  function renderCarousel() {
+    currentTarget = queue[0];
+    document.getElementById('slot0').textContent = queue[0] || '';
+    document.getElementById('slot1').textContent = queue[1] || '';
+    document.getElementById('slot2').textContent = queue[2] || '';
+  }
+
+  function advanceCarousel() {
+    queue.shift();
+    fillQueue();
+    renderCarousel();
+    targetShownAt = performance.now();
+    mistakeOnCurrent = false;
+  }
+
+  function focusInput() {
+    const inp = document.getElementById('hinput');
+    inp.value = '';
+    inp.focus();
+  }
+
+  document.getElementById('drill-area').addEventListener('click', (e) => {
+    e.preventDefault();
+    focusInput();
+  });
+
+  // Prevent any scroll on drill screen
+  document.getElementById('drill-screen').addEventListener('touchmove', (e) => {
+    e.preventDefault();
+  }, { passive: false });
+
+  document.getElementById('hinput').addEventListener('keydown', (e) => {
+    if (e.key === ' ' || e.key === 'Backspace' || e.key === 'Enter') e.preventDefault();
+  });
+
+  document.getElementById('hinput').addEventListener('input', function(e) {
+    const typed = (e.data || '').toLowerCase();
+    this.value = '';
+    if (!typed) return;
+
+    const now = performance.now();
+    const rawMs = Math.round(now - targetShownAt);
+    const paused = rawMs > settings.pauseMs;
+    const correct = typed === currentTarget;
+
+    // First letter of session: don't count time but do count accuracy
+    if (isFirstLetter) {
+      isFirstLetter = false;
+      sessionStartTime = now;
+      if (correct) {
+        // Record hit but without meaningful time
+        recordStat(currentTarget, true, 0, true);
+        sessionCorrect++;
+        sessionAttempts++;
+        addDot('c');
+        effectOk();
+        advanceCarousel();
+      } else {
+        sessionAttempts++;
+        mistakeOnCurrent = true;
+        recordStat(currentTarget, false, 0, true);
+        addDot('w');
+        effectWrong();
+      }
+      updateDrillStats();
+      return;
+    }
+
+    if (correct) {
+      sessionCorrect++;
+      sessionAttempts++;
+
+      const countTime = !paused && !mistakeOnCurrent;
+      const timeMs = countTime ? rawMs : 0;
+      recordStat(currentTarget, true, timeMs, !countTime);
+
+      // Effect based on speed
+      if (paused || mistakeOnCurrent) {
+        effectOk();
+        addDot('c');
+      } else if (rawMs <= settings.fastMs) {
+        effectFast();
+        addDot('g');
+      } else if (rawMs <= settings.mediumMs) {
+        effectMedium();
+        addDot('c');
+      } else {
+        effectOk();
+        addDot('c');
+      }
+
+      advanceCarousel();
+    } else {
+      sessionAttempts++;
+      mistakeOnCurrent = true;
+      recordStat(currentTarget, false, 0, true);
+      addDot('w');
+      effectWrong();
+    }
+
+    updateDrillStats();
+  });
+
+  function recordStat(letter, correct, timeMs, skipTime) {
+    const stats = loadStats();
+    if (!stats[letter]) stats[letter] = { hits: 0, misses: 0, totalMs: 0, timedCount: 0 };
+    const s = stats[letter];
+    if (correct) {
+      s.hits++;
+      if (!skipTime && timeMs > 0) {
+        s.totalMs += timeMs;
+        s.timedCount++;
+      }
+    } else {
+      s.misses++;
+    }
+    saveStats(stats);
+  }
+
+  function updateDrillStats() {
+    document.getElementById('ds-n').textContent = sessionCorrect;
+    if (sessionAttempts > 0) {
+      document.getElementById('ds-acc').textContent = Math.round(sessionCorrect / sessionAttempts * 100) + '%';
+    } else {
+      document.getElementById('ds-acc').textContent = '\u2014';
+    }
+    if (sessionCorrect > 1 && sessionStartTime > 0) {
+      const mins = (performance.now() - sessionStartTime) / 60000;
+      document.getElementById('ds-lpm').textContent = Math.round(sessionCorrect / mins);
+    } else {
+      document.getElementById('ds-lpm').textContent = '\u2014';
+    }
+  }
+
+  function addDot(cls) {
+    const dots = document.getElementById('dots');
+    const d = document.createElement('div');
+    d.className = 'rdot ' + cls;
+    dots.appendChild(d);
+    while (dots.children.length > 30) dots.removeChild(dots.firstChild);
+  }
+
+  // ── EFFECTS ──
+  function effectFast() {
+    // Gold ring + particles
+    const ring = document.getElementById('ring');
+    ring.className = 'ring-burst gold';
+    void ring.offsetWidth;
+    ring.classList.add('go');
+    setTimeout(() => ring.className = 'ring-burst', 600);
+    spawnParticles(14, 'var(--gold)', 'var(--correct)');
+    flashSlot('var(--gold)');
+  }
+
+  function effectMedium() {
+    // Green ring
+    const ring = document.getElementById('ring');
+    ring.className = 'ring-burst';
+    void ring.offsetWidth;
+    ring.classList.add('go');
+    setTimeout(() => ring.className = 'ring-burst', 600);
+    spawnParticles(6, 'var(--correct)', 'var(--accent)');
+    flashSlot('var(--correct)');
+  }
+
+  function effectOk() {
+    flashSlot('var(--correct)');
+  }
+
+  function effectWrong() {
+    const slot = document.getElementById('slot0');
+    slot.style.color = 'var(--wrong)';
+    slot.classList.remove('shake');
+    void slot.offsetWidth;
+    slot.classList.add('shake');
+    setTimeout(() => { slot.style.color = ''; slot.classList.remove('shake'); }, 350);
+  }
+
+  function flashSlot(color) {
+    const slot = document.getElementById('slot0');
+    slot.style.color = color;
+    setTimeout(() => { slot.style.color = ''; }, 120);
+  }
+
+  function spawnParticles(count, c1, c2) {
+    const container = document.getElementById('particles');
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const size = 3 + Math.random() * 5;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 40 + Math.random() * 80;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      const color = Math.random() > 0.5 ? c1 : c2;
+      const dur = 300 + Math.random() * 300;
+
+      p.style.cssText = `
+      width:${size}px; height:${size}px;
+      background:${color};
+      left:0; top:0;
+      transition: all ${dur}ms cubic-bezier(0.22, 1, 0.36, 1);
+      opacity: 1;
+    `;
+      container.appendChild(p);
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          p.style.transform = `translate(${dx}px, ${dy}px)`;
+          p.style.opacity = '0';
+        });
+      });
+
+      setTimeout(() => p.remove(), dur + 50);
+    }
+  }
+
+  // ── STATS SCREEN ──
+  function renderStatsScreen() {
+    const stats = loadStats();
+    const keys = Object.keys(stats).sort();
+
+    let tH = 0, tM = 0, tMs = 0, tC = 0;
+    keys.forEach(k => {
+      const s = stats[k];
+      tH += s.hits; tM += s.misses; tMs += s.totalMs; tC += s.timedCount;
+    });
+
+    const oAcc = (tH + tM) > 0 ? Math.round(tH / (tH + tM) * 100) : 0;
+    const oAvg = tC > 0 ? Math.round(tMs / tC) : 0;
+
+    document.getElementById('stats-grid').innerHTML = `
+    <div class="scard"><div class="sl">Accuracy</div><div class="sv">${oAcc}%</div></div>
+    <div class="scard"><div class="sl">Avg ms</div><div class="sv">${oAvg}</div></div>
+    <div class="scard"><div class="sl">Total</div><div class="sv">${tH + tM}</div></div>
+    <div class="scard"><div class="sl">Letters</div><div class="sv">${keys.length}</div></div>
+  `;
+
+    const rows = keys.map(k => {
+      const s = stats[k];
+      const avg = s.timedCount > 0 ? Math.round(s.totalMs / s.timedCount) : 0;
+      const acc = (s.hits + s.misses) > 0 ? Math.round(s.hits / (s.hits + s.misses) * 100) : 0;
+      return { l: k, avg, acc, n: s.hits + s.misses };
+    }).sort((a, b) => b.avg - a.avg);
+
+    const avgs = rows.map(r => r.avg).filter(v => v > 0);
+    const fastest = avgs.length ? Math.min(...avgs) : 0;
+    const slowest = avgs.length ? Math.max(...avgs) : 0;
+
+    document.getElementById('ltbody').innerHTML = rows.map(r => {
+      let cls = '';
+      if (avgs.length >= 3) {
+        if (r.avg === slowest && r.avg > 0) cls = 'slow';
+        if (r.avg === fastest && r.avg > 0) cls = 'fast';
+      }
+      const bw = r.acc * 0.5;
+      const bc = r.acc >= 90 ? 'var(--correct)' : r.acc >= 70 ? 'var(--accent)' : 'var(--wrong)';
+      return `<tr class="${cls}">
+      <td>${r.l}</td>
+      <td>${r.avg || '\u2014'}</td>
+      <td><span class="abar" style="width:${bw}px;background:${bc}"></span>${r.acc}%</td>
+      <td>${r.n}</td>
+    </tr>`;
+    }).join('');
+  }
+
+  // ── INIT ──
+  syncGrids();
+  updateStartBtn();
+</script>
+</body>
+</html>
