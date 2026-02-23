@@ -303,12 +303,14 @@ function advanceCarousel() {
   slot0.style.opacity = '0';
   slot0.style.transform = 'translateX(-18px)';
 
-  setTimeout(() => {
-    queue.shift();
-    fillQueue();
-    targetShownAt = performance.now();
-    mistakeOnCurrent = false;
+  // Update state immediately so fast typing doesn't register as a mistake
+  queue.shift();
+  fillQueue();
+  currentTarget = queue[0];
+  targetShownAt = performance.now();
+  mistakeOnCurrent = false;
 
+  setTimeout(() => {
     // Snap slot0 to entry position (no transition)
     slot0.style.transition = 'none';
     slot0.style.transform = 'translateX(14px)';
@@ -348,7 +350,7 @@ document.getElementById('hinput').addEventListener('keydown', (e) => {
 });
 
 document.getElementById('hinput').addEventListener('input', function(e) {
-  const typed = (e.data || '').toLowerCase();
+  const typed = (this.value || e.data || '').toLowerCase().slice(-1);
   this.value = '';
   if (!typed) return;
 
