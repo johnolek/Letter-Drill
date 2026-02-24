@@ -39,13 +39,13 @@
   }
 </script>
 
-<div class="stats-screen">
-  <div class="stats-header">
+<div class="screen">
+  <div class="header">
     <h2>Stats</h2>
     <button onclick={() => navigate('setup')}>← Back</button>
   </div>
 
-  <div class="stats-grid">
+  <div class="grid">
     <div class="scard"><div class="sl">Accuracy</div><div class="sv">{rows.overall.acc}%</div></div>
     <div class="scard"><div class="sl">Avg ms</div><div class="sv">{rows.overall.avg || '—'}</div></div>
     <div class="scard"><div class="sl">Total</div><div class="sv">{rows.overall.total}</div></div>
@@ -79,27 +79,27 @@
 </div>
 
 <style>
-  .stats-screen {
+  .screen {
     padding: 20px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     height: 100%;
   }
 
-  .stats-header {
+  .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
   }
 
-  .stats-header h2 {
+  .header h2 {
     font-family: var(--mono);
     font-size: 20px;
     font-weight: 700;
   }
 
-  .stats-header button {
+  .header button {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-dim);
@@ -110,7 +110,7 @@
     cursor: pointer;
   }
 
-  .stats-grid {
+  .grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;

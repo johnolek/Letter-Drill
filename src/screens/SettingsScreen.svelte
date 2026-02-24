@@ -9,8 +9,8 @@
   }
 </script>
 
-<div class="settings-screen">
-  <div class="settings-header">
+<div class="screen">
+  <div class="header">
     <h2>Settings</h2>
     <button onclick={back}>← Back</button>
   </div>
@@ -91,27 +91,27 @@
 </div>
 
 <style>
-  .settings-screen {
+  .screen {
     padding: 20px;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     height: 100%;
   }
 
-  .settings-header {
+  .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
   }
 
-  .settings-header h2 {
+  .header h2 {
     font-family: var(--mono);
     font-size: 20px;
     font-weight: 700;
   }
 
-  .settings-header button {
+  .header button {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-dim);

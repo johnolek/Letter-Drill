@@ -1,4 +1,7 @@
 <script>
+  import { fly } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
+
   // Props
   // queue        – string[] (queue[0] = current letter, queue[1..] = upcoming)
   // upcomingCount – how many upcoming slots to show
@@ -7,9 +10,6 @@
 
   // DOM refs populated via use:attachSlot action
   let slotEls = [];
-  let animTimer = null;
-  let initialized = false;
-  let prevFirst = '';
 
   // Expose imperative API to parent
   controls = {
@@ -47,40 +47,22 @@
     for (let j = 0; j < i; j++) x += Math.max(3, 28 * Math.pow(0.58, j)) * 0.62;
     return `font-size:${size}vw;opacity:${opacity};transform:translateX(${x}vw);z-index:${20 - i};`;
   }
-
-  // Slide-in animation for slot0 when current letter changes
-  $effect(() => {
-    const curr = queue[0] ?? '';
-    if (initialized && curr && curr !== prevFirst) {
-      const s = slotEls[0];
-      if (s) {
-        clearTimeout(animTimer);
-        s.style.transition = 'none';
-        s.style.opacity    = '0';
-        s.style.transform  = 'translateX(14px)';
-        void s.offsetWidth;
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            s.style.transition = 'opacity 110ms ease-out, transform 110ms cubic-bezier(0.22,1,0.36,1)';
-            s.style.opacity    = '1';
-            s.style.transform  = 'translateX(0)';
-            animTimer = setTimeout(() => { s.style.transition = ''; }, 120);
-          });
-        });
-      }
-    }
-    initialized = true;
-    prevFirst   = curr;
-  });
 </script>
 
 <div class="carousel">
   {#each Array.from({ length: 1 + Math.min(upcomingCount, 9) }, (_, i) => i) as i}
-    <div
-      class="carousel-slot"
-      style={slotStyle(i)}
-      use:attachSlot={i}
-    >{queue[i] ?? ''}</div>
+    <div class="slot" style={slotStyle(i)} use:attachSlot={i}>
+      {#if i === 0}
+        {#key queue[0]}
+          <span
+            style="display:block"
+            in:fly={{ x: 14, duration: 110, easing: cubicOut }}
+          >{queue[0] ?? ''}</span>
+        {/key}
+      {:else}
+        {queue[i] ?? ''}
+      {/if}
+    </div>
   {/each}
 </div>
 
@@ -94,7 +76,7 @@
     width: 100%;
   }
 
-  .carousel-slot {
+  .slot {
     position: absolute;
     font-family: 'Menlo', 'Courier New', monospace;
     font-weight: 700;

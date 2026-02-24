@@ -24,20 +24,20 @@
   }
 </script>
 
-<div class="slowest-panel">
-  <div class="sp-label">slowest</div>
-  <div class="sp-list">
+<div class="panel">
+  <div class="label">slowest</div>
+  <div class="list">
     {#each entries as entry (entry.letter)}
-      <div class="sp-item" in:fly={{ x: -20, duration: 300 }} out:fly={{ x: -20, duration: 300 }}>
-        <span class="sp-letter" style:color={entryColor(entry)}>{entry.letter}</span>
-        <span class="sp-ms">{entry.avg}</span>
+      <div class="item" in:fly={{ x: -20, duration: 300 }} out:fly={{ x: -20, duration: 300 }}>
+        <span class="letter" style:color={entryColor(entry)}>{entry.letter}</span>
+        <span class="ms">{entry.avg}</span>
       </div>
     {/each}
   </div>
 </div>
 
 <style>
-  .slowest-panel {
+  .panel {
     position: absolute;
     left: 6px;
     top: 6px;
@@ -45,7 +45,7 @@
     z-index: 4;
   }
 
-  .sp-label {
+  .label {
     font-family: var(--mono);
     font-size: 8px;
     text-transform: uppercase;
@@ -55,12 +55,12 @@
     margin-bottom: 4px;
   }
 
-  .sp-list {
+  .list {
     display: flex;
     flex-direction: column;
   }
 
-  .sp-item {
+  .item {
     display: flex;
     align-items: center;
     gap: 3px;
@@ -69,14 +69,14 @@
     white-space: nowrap;
   }
 
-  .sp-letter {
+  .letter {
     font-size: 13px;
     font-weight: 700;
     width: 16px;
     text-align: center;
   }
 
-  .sp-ms {
+  .ms {
     font-size: 9px;
     color: var(--text-dim);
   }

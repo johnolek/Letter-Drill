@@ -26,9 +26,9 @@
   }
 </script>
 
-<div class="setup-screen">
-  <div class="setup-title">letter drill</div>
-  <div class="setup-sub">Pick letters to practice. Tap them or type below to toggle.</div>
+<div class="screen">
+  <div class="title">letter drill</div>
+  <div class="sub">Pick letters to practice. Tap them or type below to toggle.</div>
 
   <div class="section-label">Presets</div>
   <div class="preset-row">
@@ -89,7 +89,7 @@
 </div>
 
 <style>
-  .setup-screen {
+  .screen {
     padding: 20px;
     padding-bottom: 100px;
     overflow-y: auto;
@@ -99,7 +99,7 @@
     flex-direction: column;
   }
 
-  .setup-title {
+  .title {
     font-family: var(--mono);
     font-size: 26px;
     font-weight: 700;
@@ -107,7 +107,7 @@
     margin-bottom: 4px;
   }
 
-  .setup-sub {
+  .sub {
     color: var(--text-dim);
     font-size: 14px;
     margin-bottom: 20px;

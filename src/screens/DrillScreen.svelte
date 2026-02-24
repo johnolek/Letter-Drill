@@ -4,31 +4,29 @@
   import { selection } from '../lib/state/Selection.svelte.js';
   import { DrillSession } from '../sessions/DrillSession.svelte.js';
   import { spawnParticles } from '../lib/effects.js';
-  import Carousel    from '../lib/Carousel.svelte';
-  import DotsRow     from '../lib/DotsRow.svelte';
+  import Carousel     from '../lib/Carousel.svelte';
+  import DotsRow      from '../lib/DotsRow.svelte';
   import SlowestPanel from '../lib/SlowestPanel.svelte';
-  import RingBurst   from '../lib/RingBurst.svelte';
+  import RingBurst    from '../lib/RingBurst.svelte';
 
   let { navigate } = $props();
 
-  // Session (created fresh each time DrillScreen mounts)
   const session = new DrillSession(selection.letters, settings.upcomingCount);
 
-  // UI state
-  let dots          = $state([]);
-  let ringSignal    = $state(0);
-  let ringType      = $state('');
-  let carouselCtrl  = $state(null);
+  let dots         = $state([]);
+  let dotSeq       = 0;
+  let ringSignal   = $state(0);
+  let ringType     = $state('');
+  let carouselCtrl = $state(null);
   let particlesEl;
   let inputEl;
 
   function focusInput() { inputEl?.focus(); }
 
   function addDot(cls) {
-    dots = [...dots.slice(-29), cls];
+    dots = [...dots.slice(-29), { cls, id: dotSeq++ }];
   }
 
-  // ── Effects ──
   function effectFast() {
     ringType = 'gold'; ringSignal++;
     spawnParticles(particlesEl, 14, 'var(--gold)', 'var(--correct)');
@@ -42,7 +40,6 @@
   function effectOk()    { carouselCtrl?.flash('var(--correct)'); }
   function effectWrong() { carouselCtrl?.shake(); }
 
-  // ── Input handler ──
   function onKeydown(e) {
     if (e.key === ' ' || e.key === 'Backspace' || e.key === 'Enter') e.preventDefault();
   }
@@ -53,25 +50,22 @@
     if (!typed) return;
 
     const r = session.handleInput(typed, settings);
-
     stats.record(r.letter, r.hit, r.timeMs ?? 0, r.skipTime);
 
     if (r.hit) {
-      if (r.speed === 'fast')   { effectFast();   addDot('g'); }
+      if (r.speed === 'fast')        { effectFast();   addDot('g'); }
       else if (r.speed === 'medium') { effectMedium(); addDot('c'); }
-      else                      { effectOk();     addDot('c'); }
+      else                           { effectOk();     addDot('c'); }
     } else {
       effectWrong();
       addDot('w');
     }
   }
 
-  // Derived stats display
   let dsAcc = $derived(session.accuracy !== null ? session.accuracy + '%' : '—');
   let dsLpm = $derived(session.lpm !== null ? String(session.lpm) : '—');
 </script>
 
-<!-- Hidden keyboard capture -->
 <input
   bind:this={inputEl}
   class="hidden-input"
@@ -81,10 +75,10 @@
   oninput={onInput}
 />
 
-<div class="drill-screen">
-  <div class="drill-header">
+<div class="screen">
+  <div class="header">
     <button onclick={() => navigate('setup')}>← Done</button>
-    <div class="drill-stats">
+    <div class="stats">
       <span><span class="val">{session.correct}</span></span>
       <span><span class="val">{dsAcc}</span> acc</span>
       <span><span class="val">{dsLpm}</span> lpm</span>
@@ -92,7 +86,7 @@
   </div>
 
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="drill-area" onclick={focusInput}>
+  <div class="area" onclick={focusInput}>
     <SlowestPanel />
 
     <Carousel
@@ -101,7 +95,6 @@
       bind:controls={carouselCtrl}
     />
 
-    <!-- Particle burst origin (centred on letter) -->
     <div bind:this={particlesEl} class="particles"></div>
 
     <RingBurst bind:trigger={ringSignal} {ringType} />
@@ -119,15 +112,17 @@
     background: transparent; font-size: 16px; z-index: -1;
   }
 
-  .drill-screen {
+  .screen {
     display: flex;
     flex-direction: column;
     height: 100%;
     position: relative;
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
   }
 
-  .drill-header {
+  .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -137,7 +132,7 @@
     z-index: 5;
   }
 
-  .drill-header button {
+  .header button {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-dim);
@@ -148,16 +143,16 @@
     cursor: pointer;
   }
 
-  .drill-stats {
+  .stats {
     display: flex;
     gap: 16px;
     font-family: var(--mono);
     font-size: 12px;
     color: var(--text-dim);
   }
-  .drill-stats .val { color: var(--text); font-weight: 700; }
+  .stats .val { color: var(--text); font-weight: 700; }
 
-  .drill-area {
+  .area {
     flex: 1;
     display: flex;
     flex-direction: column;

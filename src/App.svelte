@@ -63,14 +63,7 @@
     width: 100%;
   }
 
-  /* Prevent pull-to-refresh / scroll bounce on drill screens */
-  :global(.drill-screen),
-  :global(.rhy-screen) {
-    overscroll-behavior: none;
-    touch-action: none;
-  }
-
-  /* ── Global keyframes (used imperatively across components) ── */
+  /* ── Global keyframes (used across components) ── */
   @keyframes shake {
     0%,100% { transform: translateX(0); }
     20%     { transform: translateX(-8px); }
@@ -89,10 +82,4 @@
     100% { width:260px; height:260px; border:2px solid var(--gold); opacity:0; }
   }
 
-  @keyframes bannerPop {
-    0%   { opacity: 0; transform: translateX(-50%) scale(0.8); }
-    18%  { opacity: 1; transform: translateX(-50%) scale(1.06); }
-    55%  { opacity: 1; transform: translateX(-50%) scale(1); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-18px); }
-  }
 </style>

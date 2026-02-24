@@ -1,4 +1,6 @@
 <script>
+  import { fly } from 'svelte/transition';
+  import { backOut } from 'svelte/easing';
   import { settings }  from '../lib/state/Settings.svelte.js';
   import { selection } from '../lib/state/Selection.svelte.js';
   import { RhythmSession } from '../sessions/RhythmSession.svelte.js';
@@ -19,15 +21,29 @@
   let trackEl;
   let ballLEl;
   let ballREl;
-  let zoneEl;
   let inputEl;
   let carouselCtrl = $state(null);
 
   // ── UI state ──
   let dots       = $state([]);
+  let dotSeq     = 0;
   let bannerText = $state('');
+  let bannerTimer;
+  let zoneFlash  = $state(false);
+  let inZone     = $state(false);
+
   // ── Zone width (centred, updated when interval changes) ──
   let zoneWidthPct = $derived(Math.min(80, (2 * HIT_WINDOW / session.interval) * 100));
+
+  function addDot(cls) {
+    dots = [...dots.slice(-29), { cls, id: dotSeq++ }];
+  }
+
+  function showBanner(text) {
+    clearTimeout(bannerTimer);
+    bannerText = text;
+    bannerTimer = setTimeout(() => { bannerText = ''; }, 1400);
+  }
 
   // ── Ball animation callback ──
   function onProgress(p) {
@@ -38,19 +54,7 @@
     const rX = W - bW - p * (W / 2 - bW);
     ballLEl.style.transform = `translateY(-50%) translateX(${lX}px)`;
     ballREl.style.transform = `translateY(-50%) translateX(${rX}px)`;
-    const inZone = p >= Math.max(0, 1 - HIT_WINDOW / session.interval);
-    ballLEl.classList.toggle('in-zone', inZone);
-    ballREl.classList.toggle('in-zone', inZone);
-  }
-
-  // ── Feedback helpers ──
-  function addDot(cls) {
-    dots = [...dots.slice(-29), cls];
-  }
-
-  function showBanner(text) {
-    bannerText = text;
-    setTimeout(() => { bannerText = ''; }, 1400);
+    inZone = p >= Math.max(0, 1 - HIT_WINDOW / session.interval);
   }
 
   // ── Start session after mount ──
@@ -80,8 +84,8 @@
 
     if (r.hit) {
       carouselCtrl?.flash('var(--correct)');
-      zoneEl?.classList.add('zone-flash');
-      setTimeout(() => zoneEl?.classList.remove('zone-flash'), 250);
+      zoneFlash = true;
+      setTimeout(() => { zoneFlash = false; }, 250);
       addDot('c');
       if (r.speedUp) showBanner(`faster  ${(r.newInterval / 1000).toFixed(1)}s`);
     } else {
@@ -98,7 +102,6 @@
   );
 </script>
 
-<!-- Hidden keyboard capture -->
 <input
   bind:this={inputEl}
   class="hidden-input"
@@ -108,43 +111,42 @@
   oninput={onInput}
 />
 
-<div class="rhy-screen">
+<div class="screen">
   <!-- Header -->
-  <div class="rhy-header">
+  <div class="header">
     <button onclick={() => navigate('setup')}>← Done</button>
-    <div class="rhy-header-center">
+    <div class="header-center">
       <span class="streak-label">streak</span>
       <span class="streak-val {streakClass}">{session.streak}</span>
     </div>
-    <span class="interval-display">{(session.interval / 1000).toFixed(1)}s</span>
+    <span class="interval">{(session.interval / 1000).toFixed(1)}s</span>
   </div>
 
   <!-- Track -->
-  <div class="rhy-track-wrap">
-    <div bind:this={trackEl} class="rhy-track">
+  <div class="track-wrap">
+    <div bind:this={trackEl} class="track">
       <div
-        bind:this={zoneEl}
-        class="rhy-zone"
+        class="zone"
+        class:zone-flash={zoneFlash}
         style:width="{zoneWidthPct}%"
         style:left="{(100 - zoneWidthPct) / 2}%"
       ></div>
-      <div class="rhy-perfect-line"></div>
-      <div bind:this={ballLEl} class="rhy-ball"></div>
-      <div bind:this={ballREl} class="rhy-ball"></div>
+      <div class="perfect-line"></div>
+      <div bind:this={ballLEl} class="ball" class:in-zone={inZone}></div>
+      <div bind:this={ballREl} class="ball" class:in-zone={inZone}></div>
     </div>
   </div>
 
   <!-- Main area -->
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <div class="rhy-area" onclick={() => inputEl?.focus()}>
+  <div class="area" onclick={() => inputEl?.focus()}>
     <Carousel
       queue={session.queue}
       upcomingCount={settings.upcomingCount}
       bind:controls={carouselCtrl}
     />
 
-    <!-- Bottom row -->
-    <div class="rhy-bottom">
+    <div class="bottom">
       <DotsRow {dots} />
       {#if session.bestStreak > 0}
         <div class="best-label">best {session.bestStreak}</div>
@@ -154,7 +156,11 @@
 
   <!-- Speed-up banner -->
   {#if bannerText}
-    <div class="rhy-banner">{bannerText}</div>
+    <div
+      class="banner"
+      in:fly={{ y: 10, duration: 220, easing: backOut }}
+      out:fly={{ y: -16, duration: 300 }}
+    >{bannerText}</div>
   {/if}
 </div>
 
@@ -167,16 +173,18 @@
     background: transparent; font-size: 16px; z-index: -1;
   }
 
-  .rhy-screen {
+  .screen {
     display: flex;
     flex-direction: column;
     height: 100%;
     position: relative;
     overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
   }
 
   /* ── Header ── */
-  .rhy-header {
+  .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -184,7 +192,7 @@
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
   }
-  .rhy-header button {
+  .header button {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-dim);
@@ -194,7 +202,7 @@
     border-radius: 8px;
     cursor: pointer;
   }
-  .rhy-header-center {
+  .header-center {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -219,7 +227,7 @@
   .streak-val.green { color: var(--correct); }
   .streak-val.gold  { color: var(--gold); }
 
-  .interval-display {
+  .interval {
     font-family: var(--mono);
     font-size: 14px;
     color: var(--text-dim);
@@ -228,11 +236,11 @@
   }
 
   /* ── Track ── */
-  .rhy-track-wrap {
+  .track-wrap {
     padding: 20px 0 12px;
     flex-shrink: 0;
   }
-  .rhy-track {
+  .track {
     position: relative;
     height: 8px;
     background: var(--surface);
@@ -240,7 +248,7 @@
     border-bottom: 1px solid var(--border);
     overflow: visible;
   }
-  .rhy-zone {
+  .zone {
     position: absolute;
     top: 0; height: 100%;
     background: rgba(52,211,153,0.18);
@@ -248,10 +256,10 @@
     border-right: 1px solid rgba(52,211,153,0.3);
     transition: background 0.15s;
   }
-  :global(.rhy-zone.zone-flash) {
+  .zone.zone-flash {
     background: rgba(52,211,153,0.55);
   }
-  .rhy-perfect-line {
+  .perfect-line {
     position: absolute;
     left: 50%;
     top: -6px; bottom: -6px;
@@ -260,7 +268,7 @@
     background: rgba(52,211,153,0.65);
     border-radius: 1px;
   }
-  .rhy-ball {
+  .ball {
     position: absolute;
     width: 20px; height: 20px;
     border-radius: 50%;
@@ -272,13 +280,13 @@
     will-change: transform;
     transition: box-shadow 0.1s, background 0.1s;
   }
-  :global(.rhy-ball.in-zone) {
+  .ball.in-zone {
     background: var(--correct);
     box-shadow: 0 0 12px 5px rgba(52,211,153,0.7), 0 0 26px 10px rgba(52,211,153,0.38);
   }
 
   /* ── Main area ── */
-  .rhy-area {
+  .area {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -290,7 +298,7 @@
   }
 
   /* ── Bottom ── */
-  .rhy-bottom {
+  .bottom {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -304,10 +312,10 @@
   }
 
   /* ── Banner ── */
-  .rhy-banner {
+  .banner {
     position: absolute;
     top: 28%; left: 50%;
-    transform: translateX(-50%);
+    translate: -50% 0;
     background: var(--gold);
     color: var(--bg);
     font-family: var(--mono);
@@ -318,7 +326,5 @@
     white-space: nowrap;
     pointer-events: none;
     z-index: 30;
-    animation: bannerPop 1.3s ease-out forwards;
   }
-
 </style>
