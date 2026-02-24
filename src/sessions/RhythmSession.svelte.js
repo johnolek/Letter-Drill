@@ -85,6 +85,11 @@ export class RhythmSession {
       this.streak = 0;
     }
 
+    // Cancel the remaining window timeout and start the next cycle promptly.
+    // This prevents balls from freezing at center while the HIT_WINDOW drains out.
+    clearTimeout(this.#beatTimeout);
+    this.#beatTimeout = setTimeout(() => this.#startCycle(), 120);
+
     const missReason = !goodLetter ? 'letter' : null;
     return { hit, missReason, speedUp, newInterval };
   }
