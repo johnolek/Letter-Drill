@@ -38,7 +38,7 @@
   // Compute inline style for each slot position
   function slotStyle(i) {
     if (i === 0) {
-      return 'font-size:28vw;opacity:1;transform:translateX(0);z-index:20;';
+      return 'font-size:min(28vw,130px);opacity:1;transform:translateX(0);z-index:20;';
     }
     const sizePct = Math.pow(0.58, i);
     const size    = Math.max(2, 28 * sizePct);
@@ -74,6 +74,7 @@
     position: relative;
     height: 160px;
     width: 100%;
+    overflow: hidden;
   }
 
   .slot {
