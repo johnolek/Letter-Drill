@@ -11,7 +11,7 @@ const PRESETS = {
   'none': '',
 };
 
-const DEFAULT_SETTINGS = { fastMs: 350, mediumMs: 800, pauseMs: 4000, upcomingCount: 2 };
+const DEFAULT_SETTINGS = { fastMs: 350, mediumMs: 800, pauseMs: 4000, upcomingCount: 2, slowestPercent: 30, slowestCount: 3 };
 
 function loadSettings() {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem('ld_settings') || '{}') }; }
@@ -139,6 +139,8 @@ function populateSettings() {
   document.getElementById('set-medium').value = settings.mediumMs;
   document.getElementById('set-pause').value = settings.pauseMs;
   document.getElementById('set-upcoming').value = settings.upcomingCount;
+  document.getElementById('set-slowest-pct').value = settings.slowestPercent;
+  document.getElementById('set-slowest-count').value = settings.slowestCount;
 }
 
 function readSettings() {
@@ -146,6 +148,8 @@ function readSettings() {
   settings.mediumMs = parseInt(document.getElementById('set-medium').value) || DEFAULT_SETTINGS.mediumMs;
   settings.pauseMs = parseInt(document.getElementById('set-pause').value) || DEFAULT_SETTINGS.pauseMs;
   settings.upcomingCount = Math.min(10, Math.max(1, parseInt(document.getElementById('set-upcoming').value) || DEFAULT_SETTINGS.upcomingCount));
+  settings.slowestPercent = Math.min(100, Math.max(0, parseInt(document.getElementById('set-slowest-pct').value) || 0));
+  settings.slowestCount = Math.min(26, Math.max(1, parseInt(document.getElementById('set-slowest-count').value) || DEFAULT_SETTINGS.slowestCount));
   saveSettings(settings);
 }
 
@@ -253,8 +257,23 @@ function clearSlowestPanel() {
 
 // ── DRILL ──
 function pickLetter() {
-  let l;
   const last = queue.length > 0 ? queue[queue.length - 1] : '';
+
+  if (settings.slowestPercent > 0 && Math.random() * 100 < settings.slowestPercent) {
+    const stats = loadStats();
+    const slowestPool = drillLetters
+      .filter(ch => stats[ch] && stats[ch].timedCount > 0)
+      .map(ch => ({ ch, avg: stats[ch].totalMs / stats[ch].timedCount }))
+      .sort((a, b) => b.avg - a.avg)
+      .slice(0, settings.slowestCount)
+      .map(e => e.ch);
+    const candidates = slowestPool.length > 1 ? slowestPool.filter(c => c !== last) : slowestPool;
+    if (candidates.length > 0) {
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    }
+  }
+
+  let l;
   do { l = drillLetters[Math.floor(Math.random() * drillLetters.length)]; }
   while (l === last && drillLetters.length > 1);
   return l;
