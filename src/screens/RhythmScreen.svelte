@@ -291,8 +291,8 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 0 20px 24px;
+    justify-content: flex-start;
+    padding: 8px 20px 24px;
     gap: 16px;
     position: relative;
   }
