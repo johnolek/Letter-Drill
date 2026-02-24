@@ -142,7 +142,7 @@
   <div class="area" onclick={() => inputEl?.focus()}>
     <Carousel
       queue={session.queue}
-      upcomingCount={0}
+      upcomingCount={settings.upcomingCount}
       bind:controls={carouselCtrl}
     />
 
