@@ -71,6 +71,33 @@
     80%     { transform: translateX(4px); }
   }
 
+  /* ── Streak bar keyframes ── */
+  @keyframes burning-pulse {
+    0%, 100% { box-shadow: 0 0 16px rgba(251,191,36,0.7),  0 0 36px rgba(251,191,36,0.25); }
+    50%       { box-shadow: 0 0 28px rgba(251,191,36,1),    0 0 58px rgba(251,191,36,0.55); }
+  }
+
+  @keyframes plasma-flow {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
+  }
+
+  @keyframes plasma-pulse {
+    from { box-shadow: 0 0 22px rgba(249,115,22,0.85), 0 0 44px rgba(239,68,68,0.5),  0 0 72px rgba(249,115,22,0.2); }
+    to   { box-shadow: 0 0 36px rgba(251,191,36,1),    0 0 68px rgba(239,68,68,0.85), 0 0 110px rgba(249,115,22,0.35); }
+  }
+
+  @keyframes spark-flare {
+    from { transform: translateY(-50%) scale(0.9); opacity: 0.85; }
+    to   { transform: translateY(-50%) scale(1.6); opacity: 1; }
+  }
+
+  @keyframes levelup-scan {
+    0%   { clip-path: inset(0 100% 0 0); opacity: 1; }
+    55%  { clip-path: inset(0 0% 0 0);   opacity: 1; }
+    100% { clip-path: inset(0 0% 0 0);   opacity: 0; }
+  }
+
   @keyframes ringExpand {
     0%   { width:20px;  height:20px;  border:3px solid var(--correct); box-shadow:0 0 12px rgba(52,211,153,0.5); opacity:1; }
     60%  { opacity:0.7; }

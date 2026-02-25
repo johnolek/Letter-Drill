@@ -8,6 +8,7 @@
   import DotsRow      from '../lib/DotsRow.svelte';
   import SlowestPanel from '../lib/SlowestPanel.svelte';
   import RingBurst    from '../lib/RingBurst.svelte';
+  import StreakBar    from '../lib/StreakBar.svelte';
 
   let { navigate } = $props();
 
@@ -20,6 +21,40 @@
   let carouselCtrl = $state(null);
   let particlesEl;
   let inputEl;
+
+  // ── Streak state ──
+  const STREAK_HIT      = 10;
+  const STREAK_HIT_FAST = 15;    // 1.5×
+  const STREAK_MAX      = 100;
+  const STREAK_MAX_LVL  = 4;     // plasma is the ceiling
+  const DRAIN_MS        = 150;   // drain tick interval (ms)
+  // Drain pts/tick per level — escalates to keep higher levels harder to hold
+  const DRAIN_RATES     = [0.15, 0.25, 0.38, 0.55, 0.75];
+
+  let streakVal    = $state(0);
+  let streakLevel  = $state(0);
+  let streakLevelUp = $state(0); // increments only on level-up (for scan animation)
+
+  // Drain — subtracts from total progress so level can drop too
+  $effect(() => {
+    const id = setInterval(() => {
+      const total = streakLevel * STREAK_MAX + streakVal;
+      if (total <= 0) return;
+      const rate     = DRAIN_RATES[Math.min(streakLevel, DRAIN_RATES.length - 1)];
+      const newTotal = Math.max(0, total - rate);
+      streakLevel    = Math.min(STREAK_MAX_LVL, Math.floor(newTotal / STREAK_MAX));
+      streakVal      = newTotal % STREAK_MAX;
+    }, DRAIN_MS);
+    return () => clearInterval(id);
+  });
+
+  // Miss: knock 25% off ALL progress (level * max + val), then re-derive level/val
+  function applyStreakPenalty() {
+    const total    = streakLevel * STREAK_MAX + streakVal;
+    const newTotal = Math.floor(total * 0.75);
+    streakLevel    = Math.min(STREAK_MAX_LVL, Math.floor(newTotal / STREAK_MAX));
+    streakVal      = newTotal % STREAK_MAX;
+  }
 
   function focusInput() { inputEl?.focus(); }
 
@@ -56,9 +91,20 @@
       if (r.speed === 'fast')        { effectFast();   addDot('g'); }
       else if (r.speed === 'medium') { effectMedium(); addDot('c'); }
       else                           { effectOk();     addDot('c'); }
+
+      const inc  = r.speed === 'fast' ? STREAK_HIT_FAST : STREAK_HIT;
+      const next = streakVal + inc;
+      if (next >= STREAK_MAX && streakLevel < STREAK_MAX_LVL) {
+        streakLevel++;
+        streakLevelUp++;
+        streakVal = next - STREAK_MAX;
+      } else {
+        streakVal = Math.min(STREAK_MAX, next);
+      }
     } else {
       effectWrong();
       addDot('w');
+      applyStreakPenalty();
     }
   }
 
@@ -90,6 +136,8 @@
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="area" onclick={focusInput}>
     <SlowestPanel />
+
+    <StreakBar val={streakVal} level={streakLevel} levelUp={streakLevelUp} />
 
     <Carousel
       queue={session.queue}
