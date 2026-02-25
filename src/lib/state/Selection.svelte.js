@@ -1,10 +1,12 @@
+import { SvelteSet } from 'svelte/reactivity';
+
 class Selection {
-  set = $state(new Set());
+  set = new SvelteSet();
 
   constructor() {
     try {
       const saved = JSON.parse(localStorage.getItem('ld_sel') || '[]');
-      this.set = new Set(saved);
+      for (const ch of saved) this.set.add(ch);
     } catch { /* ignore */ }
   }
 
@@ -17,17 +19,18 @@ class Selection {
     this.save();
   }
 
-  has(ch)     { return this.set.has(ch); }
-  get size()  { return this.set.size; }
+  has(ch)       { return this.set.has(ch); }
+  get size()    { return this.set.size; }
   get letters() { return [...this.set]; }
 
   setAll(str) {
-    this.set = new Set(str.split(''));
+    this.set.clear();
+    for (const ch of str.split('')) this.set.add(ch);
     this.save();
   }
 
   clear() {
-    this.set = new Set();
+    this.set.clear();
     this.save();
   }
 

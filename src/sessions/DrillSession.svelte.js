@@ -1,15 +1,18 @@
+import { stats }    from '../lib/state/Stats.svelte.js';
+import { settings } from '../lib/state/Settings.svelte.js';
+
 export class DrillSession {
   // ── Reactive UI state ──
-  queue         = $state([]);
-  correct       = $state(0);
-  attempts      = $state(0);
+  queue            = $state([]);
+  correct          = $state(0);
+  attempts         = $state(0);
   mistakeOnCurrent = $state(false);
-  isFirst       = $state(true);
+  isFirst          = $state(true);
 
   // ── Internal timing (not reactive) ──
-  #letters        = [];
-  #targetShownAt  = 0;
-  #sessionStart   = 0;
+  #letters       = [];
+  #targetShownAt = 0;
+  #sessionStart  = 0;
 
   constructor(letters, upcomingCount) {
     this.#letters = letters;
@@ -34,10 +37,10 @@ export class DrillSession {
   // ── Input handling ──
   // Returns { hit, letter, speed, timeMs, skipTime, isFirst }
   // speed: 'fast' | 'medium' | 'slow' | null
-  handleInput(typed, settings) {
+  handleInput(typed, cfg) {
     const now    = performance.now();
     const rawMs  = Math.round(now - this.#targetShownAt);
-    const paused = rawMs > settings.pauseMs;
+    const paused = rawMs > cfg.pauseMs;
     const hit    = typed === this.currentLetter;
     const letter = this.currentLetter;
 
@@ -47,7 +50,7 @@ export class DrillSession {
       this.attempts++;
       if (hit) {
         this.correct++;
-        this.advance(settings.upcomingCount);
+        this.advance(cfg.upcomingCount);
       } else {
         this.mistakeOnCurrent = true;
       }
@@ -61,10 +64,10 @@ export class DrillSession {
       const skipTime = paused || this.mistakeOnCurrent;
       const timeMs   = skipTime ? 0 : rawMs;
       const speed    = skipTime  ? null
-        : rawMs <= settings.fastMs   ? 'fast'
-        : rawMs <= settings.mediumMs ? 'medium'
+        : rawMs <= cfg.fastMs   ? 'fast'
+        : rawMs <= cfg.mediumMs ? 'medium'
         : 'slow';
-      this.advance(settings.upcomingCount);
+      this.advance(cfg.upcomingCount);
       return { hit: true, letter, speed, timeMs, skipTime, isFirst: false };
     } else {
       this.mistakeOnCurrent = true;
@@ -86,7 +89,31 @@ export class DrillSession {
   }
 
   #pick() {
-    const last = this.queue.length > 0 ? this.queue[this.queue.length - 1] : '';
+    const last    = this.queue.length > 0 ? this.queue[this.queue.length - 1] : '';
+    const slowPct = settings.slowPct;
+    const slowN   = settings.slowN;
+
+    // Try slow-letter bias
+    if (slowPct > 0 && Math.random() * 100 < slowPct) {
+      const data    = stats.data;
+      const slowest = this.#letters
+        .filter(l => (data[l]?.timedCount ?? 0) > 0)
+        .map(l => ({ l, avg: Math.round(data[l].totalMs / data[l].timedCount) }))
+        .sort((a, b) => b.avg - a.avg)
+        .slice(0, slowN)
+        .map(x => x.l);
+
+      if (slowest.length > 0) {
+        let l, tries = 0;
+        do {
+          l = slowest[Math.floor(Math.random() * slowest.length)];
+          tries++;
+        } while (l === last && slowest.length > 1 && tries < 10);
+        return l;
+      }
+    }
+
+    // Regular random pick
     let l;
     do { l = this.#letters[Math.floor(Math.random() * this.#letters.length)]; }
     while (l === last && this.#letters.length > 1);
