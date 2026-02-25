@@ -35,17 +35,32 @@
     return { destroy() { slotEls[i] = null; } };
   }
 
+  // Base size for slot 0 in both units. All other slots scale by 0.58^i.
+  const BASE_VW = 28;
+  const BASE_PX = 130;
+
+  function slotSize(i) {
+    const vw = Math.max(2, BASE_VW * Math.pow(0.78, i));
+    const px = Math.max(2, BASE_PX * Math.pow(0.78, i));
+    return { vw, px };
+  }
+
   // Compute inline style for each slot position
   function slotStyle(i) {
-    if (i === 0) {
-      return 'font-size:min(28vw,130px);opacity:1;transform:translateX(0);z-index:20;';
+    const { vw, px } = slotSize(i);
+    const opacity = i === 0 ? 1 : Math.max(0.08, Math.pow(0.55, i));
+
+    // x offset = sum of previous slots' capped widths × 0.62
+    const xParts = [];
+    for (let j = 0; j < i; j++) {
+      const s = slotSize(j);
+      xParts.push(`min(${(s.vw * 0.62).toFixed(2)}vw,${(s.px * 0.62).toFixed(2)}px)`);
     }
-    const sizePct = Math.pow(0.58, i);
-    const size    = Math.max(2, 28 * sizePct);
-    const opacity = Math.max(0.04, Math.pow(0.42, i));
-    let x = 0;
-    for (let j = 0; j < i; j++) x += Math.max(3, 28 * Math.pow(0.58, j)) * 0.62;
-    return `font-size:${size}vw;opacity:${opacity};transform:translateX(${x}vw);z-index:${20 - i};`;
+    const x = xParts.length === 0 ? '0px'
+      : xParts.length === 1 ? xParts[0]
+      : `calc(${xParts.join(' + ')})`;
+
+    return `font-size:min(${vw}vw,${px}px);opacity:${opacity};transform:translateX(${x});z-index:${20 - i};`;
   }
 </script>
 
