@@ -88,8 +88,6 @@
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     height: 100%;
-    display: flex;
-    flex-direction: column;
   }
 
   .title {

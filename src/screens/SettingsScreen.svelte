@@ -126,6 +126,10 @@
     </div>
   </div>
 
+  <div class="reset-row">
+    <button class="reset-btn" onclick={() => settings.reset()}>Reset to defaults</button>
+  </div>
+
 </div>
 
 <style>
@@ -337,4 +341,25 @@
     transform: translateX(18px);
     background: var(--bg);
   }
+
+  /* ── Reset ── */
+  .reset-row {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .reset-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+  }
+  .reset-btn:hover { border-color: rgba(248,113,113,0.4); color: var(--wrong); }
+  .reset-btn:active { background: rgba(248,113,113,0.08); }
 </style>

@@ -1,6 +1,6 @@
 const DEFAULTS = {
-  fastMs:        350,
-  mediumMs:      800,
+  fastMs:        600,
+  mediumMs:      1200,
   pauseMs:       4000,
   upcomingCount: 2,
   slowPct:       30,  // % chance of picking from slow letters
@@ -28,6 +28,11 @@ class Settings {
       if (s.slowN         !== undefined) this.slowN         = s.slowN;
       if (s.showStreak    !== undefined) this.showStreak    = s.showStreak;
     } catch { /* ignore corrupt data */ }
+  }
+
+  reset() {
+    for (const [k, v] of Object.entries(DEFAULTS)) this[k] = v;
+    this.save();
   }
 
   save() {
