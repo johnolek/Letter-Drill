@@ -32,7 +32,7 @@
   <div class="row">
     <div class="row-info">
       <div class="row-label">Fast threshold</div>
-      <div class="row-desc">ms — gold burst effect</div>
+      <div class="row-desc">ms — gold burst effect and more points towards your streak</div>
     </div>
     <div class="stepper">
       <button onclick={() => step('fastMs', -50, 50, 5000)}>−</button>
@@ -56,7 +56,7 @@
   <div class="row">
     <div class="row-info">
       <div class="row-label">Pause timeout</div>
-      <div class="row-desc">ms — ignore long gaps</div>
+      <div class="row-desc">ms — if you take longer than this to hit the letter, it won't count against your stats.</div>
     </div>
     <div class="stepper">
       <button onclick={() => step('pauseMs', -500, 1000, 30000)}>−</button>
@@ -82,12 +82,13 @@
   <div class="row">
     <div class="row-info">
       <div class="row-label">Streak meter</div>
-      <div class="row-desc">level bar during drill</div>
+      <div class="row-desc">Enable to show the streak bar during the drill</div>
     </div>
     <button
       class="toggle"
       class:on={settings.showStreak}
       onclick={() => settings.showStreak = !settings.showStreak}
+      aria-label="Toggle streak meter"
     >
       <span class="knob"></span>
     </button>
@@ -116,7 +117,7 @@
   <div class="row" class:dim={settings.slowPct === 0}>
     <div class="row-info">
       <div class="row-label">Slowest pool size</div>
-      <div class="row-desc">draw from top‑N slowest letters</div>
+      <div class="row-desc">When using slow letter boost, choose from this many of your slowest letters</div>
     </div>
     <div class="stepper compact">
       <button onclick={() => step('slowN', -1, 1, 100)}>−</button>

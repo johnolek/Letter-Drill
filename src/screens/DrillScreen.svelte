@@ -138,7 +138,8 @@
     </div>
   </div>
 
-  <div class="area" role="application" onclick={focusInput}>
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="area" onpointerdown={focusInput}>
     {#if settings.showStreak}
       <StreakBar val={streakVal} level={streakLevel} />
     {/if}
