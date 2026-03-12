@@ -3,7 +3,7 @@ const DEFAULTS = {
   mediumMs:      800,
   pauseMs:       4000,
   upcomingCount: 2,
-  slowPct:       0,   // % chance of picking from slow letters
+  slowPct:       30,  // % chance of picking from slow letters
   slowN:         5,   // draw from top-N slowest
 };
 

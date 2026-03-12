@@ -6,7 +6,7 @@
   import { spawnParticles } from '../lib/effects.js';
   import Carousel     from '../lib/Carousel.svelte';
   import DotsRow      from '../lib/DotsRow.svelte';
-  import SlowestPanel from '../lib/SlowestPanel.svelte';
+
   import RingBurst    from '../lib/RingBurst.svelte';
   import StreakBar    from '../lib/StreakBar.svelte';
 
@@ -135,8 +135,6 @@
 
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <div class="area" onclick={focusInput}>
-    <SlowestPanel />
-
     <StreakBar val={streakVal} level={streakLevel} levelUp={streakLevelUp} />
 
     <Carousel

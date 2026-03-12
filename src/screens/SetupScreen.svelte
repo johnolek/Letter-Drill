@@ -244,7 +244,7 @@
   .bottom-links {
     display: flex;
     gap: 8px;
-    margin-top: 18px;
+    margin-top: 28px;
   }
 
   .bottom-bar {
