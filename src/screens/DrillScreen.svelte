@@ -73,11 +73,6 @@
     }
   }
 
-  function applyStreakPenalty() {
-    const total = streakLevel * STREAK_MAX + streakVal;
-    setStreakFromTotal(Math.floor(total * 0.90));
-  }
-
   function focusInput() { inputEl?.focus(); }
 
   function addDot(cls) {
@@ -127,7 +122,6 @@
     } else {
       effectWrong();
       addDot('w');
-      applyStreakPenalty();
     }
 
     saveProgress();
