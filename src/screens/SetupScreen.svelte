@@ -14,7 +14,7 @@
     const ch = (e.data || toggleInputValue).toLowerCase().slice(-1);
     toggleInputValue = '';
     if (!ch || ch === ' ') return;
-    if ([...LETTERS, ...EXTRAS].includes(ch)) selection.toggle(ch);
+    selection.toggle(ch);
   }
 
   function startDrill() {
