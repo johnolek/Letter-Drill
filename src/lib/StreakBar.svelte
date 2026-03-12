@@ -146,12 +146,16 @@
 
 <div class="outer">
   <div class="track-slot">
-    <div class="track" style:height="{height}px" style:box-shadow={glow}>
+    <div
+      class="track"
+      style:height="{height}px"
+      style:box-shadow={glow}
+      style:transform={hasShimmer ? `skewX(${shimmerSkew}deg)` : null}
+    >
       <div
         class="fill"
         style:width="{tweenVal.current}%"
         style:background={color}
-        style:transform={hasShimmer ? `skewX(${shimmerSkew}deg)` : null}
       >
         {#if level >= 2}
           <div
