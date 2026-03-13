@@ -1,11 +1,21 @@
 <script>
   import { Tween } from 'svelte/motion';
   import { settings } from '../lib/state/Settings.svelte.js';
+  import { BIGRAMS, TRIGRAMS } from '../lib/constants.js';
+
+  const sortedBigrams  = [...BIGRAMS].sort();
+  const sortedTrigrams = [...TRIGRAMS].sort();
+  const defaultNgramsText = [...sortedBigrams, ...sortedTrigrams].join('\n');
+  let ngramText = $state(settings.customNgrams || defaultNgramsText);
+  function onNgramInput() { settings.customNgrams = ngramText; }
 
   let { navigate } = $props();
 
   const slowPctDisplay = new Tween(settings.slowPct, { duration: 150 });
   $effect(() => { slowPctDisplay.set(settings.slowPct); });
+
+  const ngramPctDisplay = new Tween(settings.ngramPct, { duration: 150 });
+  $effect(() => { ngramPctDisplay.set(settings.ngramPct); });
 
   function back() {
     settings.save();
@@ -129,6 +139,40 @@
       <button onclick={() => step('slowN', 1, 1, 100)}>+</button>
     </div>
   </div>
+
+  <div class="row slider-row">
+    <div class="row-info">
+      <div class="row-label">N-gram mix</div>
+      <div class="row-desc">% of letters generated from common bigrams and trigrams</div>
+    </div>
+    <span class="slider-val">{Math.round(ngramPctDisplay.current)}%</span>
+  </div>
+  <div class="slider-wrap">
+    <input
+      type="range" min="0" max="100" step="5"
+      bind:value={settings.ngramPct}
+      style={sliderStyle(settings.ngramPct, 0, 100)}
+    />
+    <div class="slider-ticks">
+      <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+    </div>
+  </div>
+  {#if settings.ngramPct === 100}
+    <div class="ngram-note">Punctuation and special characters will only appear if this is below 100%.</div>
+  {/if}
+
+  <div class="row">
+    <div class="row-info">
+      <div class="row-label">Custom sequences</div>
+      <div class="row-desc">Bigrams, trigrams, or words separated by spaces, commas, or newlines. Clear to restore defaults.</div>
+    </div>
+  </div>
+  <textarea
+    class="custom-ngrams"
+    rows="8"
+    bind:value={ngramText}
+    oninput={onNgramInput}
+  ></textarea>
 
   <div class="reset-row">
     <button class="reset-btn" onclick={() => settings.reset()}>Reset to defaults</button>
@@ -362,6 +406,40 @@
   .toggle.on .knob {
     transform: translateX(18px);
     background: var(--bg);
+  }
+
+  /* ── N-gram note ── */
+  .ngram-note {
+    font-size: 11px;
+    color: var(--text-dim);
+    opacity: 0.7;
+    padding: 4px 0 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── Custom ngrams textarea ── */
+  .custom-ngrams {
+    width: 100%;
+    min-height: 60px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    padding: 10px;
+    resize: vertical;
+    outline: none;
+    margin-bottom: 0;
+    box-sizing: border-box;
+    transition: border-color 0.12s;
+  }
+  .custom-ngrams:focus {
+    border-color: var(--accent);
+  }
+  .custom-ngrams::placeholder {
+    color: var(--text-dim);
+    opacity: 0.5;
   }
 
   /* ── Reset ── */
